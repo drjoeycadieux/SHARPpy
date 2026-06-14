@@ -1217,6 +1217,16 @@ class Main(QMainWindow):
         if os.path.isfile(NUCAPS_times_file):
             os.remove(NUCAPS_times_file)
 
+        # Attempt to stop any running async threads to avoid QThread warnings
+        try:
+            if hasattr(self, 'picker') and hasattr(self.picker, 'async_obj'):
+                try:
+                    self.picker.async_obj.clearQueue()
+                except Exception:
+                    logging.exception('Error while clearing async threads')
+        except Exception:
+            logging.exception('Error checking async_obj during closeEvent')
+
         self.config.toFile()
 
 def newerRelease(latest):

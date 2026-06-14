@@ -93,18 +93,32 @@ class AsyncThreads(QObject):
 
     @Slot(str, tuple)
     def finish(self, thread_id, ret_val):
-        thd = self.threads[thread_id]
-        callback = self.callbacks[thread_id]
+        thd = self.threads.get(thread_id)
+        callback = self.callbacks.get(thread_id)
 
-        callback(ret_val)
+        try:
+            if callback is not None:
+                # If the worker returned an Exception object, log it and skip calling the callback
+                try:
+                    if isinstance(ret_val, tuple) and len(ret_val) > 0 and isinstance(ret_val[0], Exception):
+                        logging.exception(ret_val[0])
+                    else:
+                        callback(ret_val)
+                except Exception:
+                    logging.exception('Exception while executing async callback')
+        finally:
+            try:
+                if thread_id in self.threads:
+                    del self.threads[thread_id]
+                if thread_id in self.callbacks:
+                    del self.callbacks[thread_id]
+            except Exception:
+                logging.exception('Error cleaning up async thread entries')
 
-        del self.threads[thread_id]
-        del self.callbacks[thread_id]
-
-        self.running -= 1
-        if self.running < self.max_threads:
-            # Might not be the case if we just started a high-priority thread
-            self.startNext()
+            self.running -= 1
+            if self.running < self.max_threads:
+                # Might not be the case if we just started a high-priority thread
+                self.startNext()
 
     def _genThreadId(self):
         time_stamp = datetime.utcnow().isoformat()

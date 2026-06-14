@@ -126,3 +126,25 @@ SHARPpy is currently managed by the following co-developers (in no particular or
 - Tim Supinie (OU School of Meteorology)
 - Rebekah Esmaili (Science and Technology Corp.)
 - Jeff Szkodzinski (Science and Technology Corp.)
+
+## Local Fixes (2026-06-14)
+
+This repository copy includes a few targeted runtime fixes applied locally on 2026-06-14 to address crashes observed when interacting with the GUI calendar and to make shutdown cleaner:
+
+- **Protect async worker results and callbacks:** Updated `sutils/async.py` and `sutils/async_threads.py` so that exceptions raised inside worker threads are logged and won't cause the main-thread callback to raise. This prevents crashes when a datasource fetch fails (for example an HTTP 404) and the worker returns an Exception object.
+- **Clean async threads on shutdown:** Updated `runsharp/full_gui.py` to attempt to clear any queued/active async threads during the main window `closeEvent`, reducing the likelihood of the message "QThread: Destroyed while thread is still running" on exit.
+
+Testing notes:
+
+- Run the GUI in debug mode and reproduce the calendar click that previously crashed the app:
+
+```bash
+SHARPpy.exe --debug
+```
+
+- Check the log file `~/.sharppy/sharppy.log` (or console output in `--debug`) for worker exception records instead of an application crash. The app should no longer exit due to unhandled exceptions from async workers.
+
+Notes:
+
+- Datasource HTTP errors (e.g. 404) can still occur if remote servers are unavailable or endpoints have changed; these are logged and handled more gracefully now.
+
