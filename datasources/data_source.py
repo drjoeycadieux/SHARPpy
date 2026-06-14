@@ -13,7 +13,7 @@ except ImportError:
 
 import certifi
 import platform, subprocess, re
-import imp
+import importlib.util
 import socket
 import logging
 import traceback
@@ -42,7 +42,9 @@ else:
         pkg_avail_loc = os.path.join(os.path.dirname(__file__), 'available.py')
         shutil.copy(pkg_avail_loc, avail_loc)
 
-    available = imp.load_source('available', avail_loc)
+    spec = importlib.util.spec_from_file_location('available', avail_loc)
+    available = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(available)
 
 # TAS: Comment this file and available.py
 

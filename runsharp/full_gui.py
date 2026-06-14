@@ -1,5 +1,17 @@
 import os
-os.environ['QT_API'] = 'pyside2' # Force PySide2 to be used in QtPy
+if 'QT_API' not in os.environ:
+    for api, module_name in (
+            ('pyside6', 'PySide6'),
+            ('pyqt6', 'PyQt6'),
+            ('pyside2', 'PySide2'),
+            ('pyqt5', 'PyQt5')):
+        try:
+            __import__(module_name)
+            os.environ['QT_API'] = api
+            break
+        except ImportError:
+            continue
+
 from qtpy.QtGui import *
 from qtpy.QtCore import *
 from qtpy.QtWidgets import *

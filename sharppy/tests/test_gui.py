@@ -1,29 +1,30 @@
-from qtpy import QtGui, QtCore, QtWidgets
-import sharppy.viz as viz
-import sharppy.viz.preferences as preferences
-from sharppy.io.spc_decoder import SPCDecoder
-import pytest
 import os
+import pytest
 import sys
 import numpy as np
 
-""" plotText() and plotSkewT keep failing """
-## Travis CI allows for a psuedo X-window editor to run if you are running
-## a Linux image.  So that means that only on Linux can we run GUI tests.
-## So, I've created a decorator to only run these tests if the DISPLAY_AVAIL
-## variable is set.
+has_display = os.environ.get('DISPLAY_AVAIL', None) not in ('NO', '0', 'False') and os.environ.get('DISPLAY', None) is not None
 
-dec = SPCDecoder('examples/data/14061619.OAX')
-prof_coll = dec.getProfiles()
-prof = prof_coll.getCurrentProfs()['']
+if has_display:
+    from qtpy import QtGui, QtCore, QtWidgets
+    import sharppy.viz as viz
+    import sharppy.viz.preferences as preferences
+    from sharppy.io.spc_decoder import SPCDecoder
 
-if QtWidgets.QApplication.instance() is None:
-    app = QtWidgets.QApplication([])
+    dec = SPCDecoder('examples/data/14061619.OAX')
+    prof_coll = dec.getProfiles()
+    prof = prof_coll.getCurrentProfs()['']
+
+    if QtWidgets.QApplication.instance() is None:
+        app = QtWidgets.QApplication([])
+    else:
+        app = QtWidgets.QApplication.instance()
 else:
-    app = QtWidgets.QApplication.instance()
+    viz = None
+    prof = None
+    app = None
 
-@pytest.mark.skipif(True, reason="DISPLAY not set")
-# @pytest.mark.skipif("DISPLAY_AVAIL" in os.environ and os.environ["DISPLAY_AVAIL"] == 'NO', reason="DISPLAY not set")
+@pytest.mark.skipif(not has_display, reason="DISPLAY not set")
 def test_insets():
     insets = [viz.fire.plotFire,
               viz.winter.plotWinter,
@@ -49,8 +50,7 @@ def test_insets():
     ens.addProfileCollection(prof_coll)
     ens.setActiveCollection(0)
 
-# @pytest.mark.skipif("DISPLAY_AVAIL" in os.environ and os.environ["DISPLAY_AVAIL"] == 'NO', reason="DISPLAY not set")
-@pytest.mark.skipif(True, reason="DISPLAY not set")
+@pytest.mark.skipif(not has_display, reason="DISPLAY not set")
 def test_hodo():
     hodo = viz.hodo.plotHodo
 
@@ -62,8 +62,7 @@ def test_hodo():
     #s.setDeviant('left')
     s.plotBitMap.save('hodo.png', format='png')
 
-# @pytest.mark.skipif("DISPLAY_AVAIL" in os.environ and os.environ["DISPLAY_AVAIL"] == 'NO', reason="DISPLAY not set")
-@pytest.mark.skipif(True, reason="DISPLAY not set")
+@pytest.mark.skipif(not has_display, reason="DISPLAY not set")
 def test_skew():
     skew = viz.skew.plotSkewT
     #s = skew()
@@ -71,8 +70,7 @@ def test_skew():
     #s.setActiveCollection(0)
     #s.plotBitMap.save('skew.png', format='png')
 
-# @pytest.mark.skipif("DISPLAY_AVAIL" in os.environ and os.environ["DISPLAY_AVAIL"] == 'NO', reason="DISPLAY not set")
-@pytest.mark.skipif(True, reason="DISPLAY not set")
+@pytest.mark.skipif(not has_display, reason="DISPLAY not set")
 def test_smaller_insets():
     insets = [viz.speed.plotSpeed,
               viz.advection.plotAdvection,
@@ -95,8 +93,7 @@ def test_smaller_insets():
     test = viz.generic.plotGeneric(np.asarray([1,2]),np.asarray([1,2]))
     del test
 
-# @pytest.mark.skipif("DISPLAY_AVAIL" in os.environ and os.environ["DISPLAY_AVAIL"] == 'NO', reason="DISPLAY not set")
-@pytest.mark.skipif(True, reason="DISPLAY not set")
+@pytest.mark.skipif(not has_display, reason="DISPLAY not set")
 def test_mapper():
     mapper = viz.map.Mapper(-97,35)
     assert mapper.getLambda0() == -97
@@ -107,5 +104,6 @@ def test_mapper():
         assert mapper.getProjection() == proj
         mapper.getCoordPaths()
 
-app.quit()
-del app
+if app is not None:
+    app.quit()
+    del app

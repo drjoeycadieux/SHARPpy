@@ -12,7 +12,7 @@ import certifi
 from datetime import datetime
 import glob
 import os
-import imp
+import importlib.util
 import logging
 
 class abstract(object):
@@ -51,7 +51,9 @@ def findDecoders():
         # Find and load custom decoders
         dec_mod_name = os.path.basename(dec)[:-3]
         logging.debug("Found custom decoder '%s'." % dec_mod_name)
-        dec_imp = imp.load_source(dec_mod_name, dec)
+        spec = importlib.util.spec_from_file_location(dec_mod_name, dec)
+        dec_imp = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dec_imp)
 
         dec_name = dec_imp.__classname__
         fmt_name = dec_imp.__fmtname__
